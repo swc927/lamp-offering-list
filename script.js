@@ -340,11 +340,11 @@ function downloadPDF() {
     const container = containers[index];
 
     html2canvas(container, {
-      scale: 4,
+      scale: 2,
       useCORS: true,
     })
       .then((canvas) => {
-        const imgData = canvas.toDataURL("image/jpeg", 1.0);
+        const imgData = canvas.toDataURL("image/jpeg", 0.6);
 
         const imgProps = pdf.getImageProperties(imgData);
         const pdfWidth = pdf.internal.pageSize.getWidth();
