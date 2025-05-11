@@ -13,7 +13,7 @@ function generate() {
 
   let page, deceasedPage;
   let regularCount = 0,
-    deceasedCount = 0;
+      deceasedCount = 0;
 
   lines.forEach((line) => {
     const firstSpace = line.indexOf(" ");
@@ -31,7 +31,7 @@ function generate() {
       nameRaw.includes("祖先") ||
       nameRaw.includes("冤亲债主");
 
-      const name = smartCapitalize(nameRaw);
+    const name = smartCapitalize(nameRaw);
 
     if (isDeceasedEntry) {
       if (!deceasedPage || deceasedCount % 65 === 0) {
@@ -50,6 +50,7 @@ function generate() {
 
   scalePages();
 }
+
 
 function createPage(background, type) {
   const container = document.createElement("div");
