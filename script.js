@@ -16,11 +16,12 @@ function generate() {
       deceasedCount = 0;
 
   lines.forEach((line) => {
-    const firstSpace = line.indexOf(" ");
-    if (firstSpace === -1) return;
+    const parts = line.trim().split(/\s+/); // <-- split by any whitespace
+    if (parts.length < 2) return;
 
-    const number = line.slice(0, firstSpace).trim();
-    const nameRaw = line.slice(firstSpace + 1).trim();
+    const number = parts[0];
+    const nameRaw = parts.slice(1).join(" ");
+
 
     const isDeceasedEntry =
       nameRaw.startsWith("故") ||
