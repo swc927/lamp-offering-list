@@ -84,7 +84,7 @@ function createEntry(page, number, name) {
       name.includes("历代") ||
       name.includes("祖宗") ||
       name.includes("祖先") ||
-      name.includes("冤亲债主");
+      name.includes("冤亲债主")
   ) {
     isSpecialDeceased = true;
   }
