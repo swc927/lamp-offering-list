@@ -26,6 +26,7 @@ function generate() {
     const isDeceasedEntry =
       name.startsWith("故") ||
       name.includes("众生") ||
+      name.includes("歷代") ||
       name.includes("祖先") ||
       name.includes("冤亲债主");
 
@@ -80,6 +81,7 @@ function createEntry(page, number, name) {
     name.includes("祖先") ||
     name.includes("冤亲债主") ||
     name.includes("历代") ||
+    name.includes("歷代") ||
     name.includes("祖宗")
   ) {
     isSpecialDeceased = true;
