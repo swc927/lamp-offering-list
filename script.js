@@ -30,7 +30,9 @@ function generate() {
       nameRaw.includes("历代") ||
       nameRaw.includes("祖宗") ||
       nameRaw.includes("祖先") ||
-      nameRaw.includes("冤亲债主");
+      nameRaw.includes("冤亲债主") ||
+      nameRaw.toLowerCase().includes("sentient beings") ||
+      nameRaw.toLowerCase().includes("all sentient beings");
 
     const name = smartCapitalize(nameRaw);
 
