@@ -23,13 +23,13 @@ function generate() {
     const nameRaw = line.slice(firstSpace + 1).trim();
 
     const isDeceasedEntry =
-      name.startsWith("故") ||
-      name.includes("众生") ||
-      name.includes("歷代") ||
-      name.includes("历代") ||
-      name.includes("祖宗") ||
-      name.includes("祖先") ||
-      name.includes("冤亲债主");
+      nameRaw.startsWith("故") ||
+      nameRaw.includes("众生") ||
+      nameRaw.includes("歷代") ||
+      nameRaw.includes("历代") ||
+      nameRaw.includes("祖宗") ||
+      nameRaw.includes("祖先") ||
+      nameRaw.includes("冤亲债主");
 
       const name = smartCapitalize(nameRaw);
 
