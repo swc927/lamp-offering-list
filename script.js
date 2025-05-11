@@ -79,12 +79,12 @@ function createEntry(page, number, name) {
     isDeceased = true;
     displayName = name.replace(/^故\s*/, "");
   } else if (
-    name.includes("众生") ||
-    name.includes("祖先") ||
-    name.includes("冤亲债主") ||
-    name.includes("历代") ||
-    name.includes("歷代") ||
-    name.includes("祖宗")
+      name.includes("众生") ||
+      name.includes("歷代") ||
+      name.includes("历代") ||
+      name.includes("祖宗") ||
+      name.includes("祖先") ||
+      name.includes("冤亲债主");
   ) {
     isSpecialDeceased = true;
   }
