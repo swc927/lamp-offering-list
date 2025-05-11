@@ -20,7 +20,9 @@ function generate() {
     if (parts.length < 2) return;
 
     const number = parts[0];
-    const nameRaw = parts.slice(1).join(" ");
+    let nameRaw = parts.slice(1).join(" ");
+    nameRaw = nameRaw.replace(/\s+/g, " ").trim().toLowerCase();
+
 
 
     const isDeceasedEntry =
@@ -31,8 +33,8 @@ function generate() {
       nameRaw.includes("祖宗") ||
       nameRaw.includes("祖先") ||
       nameRaw.includes("冤亲债主") ||
-      nameRaw.toLowerCase().includes("sentient beings") ||
-      nameRaw.toLowerCase().includes("all sentient beings");
+      nameRaw.includes("sentient beings") ||
+      nameRaw.includes("all sentient beings");
 
     const name = smartCapitalize(nameRaw);
 
