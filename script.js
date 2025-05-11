@@ -21,7 +21,6 @@ function generate() {
 
     const number = line.slice(0, firstSpace).trim();
     const nameRaw = line.slice(firstSpace + 1).trim();
-    const name = smartCapitalize(nameRaw);
 
     const isDeceasedEntry =
       name.startsWith("故") ||
@@ -31,6 +30,8 @@ function generate() {
       name.includes("祖宗") ||
       name.includes("祖先") ||
       name.includes("冤亲债主");
+
+      const name = smartCapitalize(nameRaw);
 
     if (isDeceasedEntry) {
       if (!deceasedPage || deceasedCount % 65 === 0) {
