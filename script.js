@@ -1,4 +1,4 @@
-let lampBackground = "Lamp.jpg";
+  let lampBackground = "Lamp.jpg";
 let deceasedBackground = "Deceased.jpg";
 
 function generate() {
@@ -16,14 +16,13 @@ function generate() {
       deceasedCount = 0;
 
   lines.forEach((line) => {
-    const parts = line.trim().split(/\s+/); // <-- split by any whitespace
+    const parts = line.trim().split(/\s+/);
     if (parts.length < 2) return;
 
     const number = parts[0];
-    let nameRaw = parts.slice(1).join(" ");
-    nameRaw = nameRaw.replace(/\s+/g, " ").trim().toLowerCase();
-
-
+    
+    const originalNameRaw = parts.slice(1).join(" ");
+    let nameRaw = originalNameRaw.replace(/\s+/g, " ").trim().toLowerCase();
 
     const isDeceasedEntry =
       nameRaw.startsWith("故") ||
@@ -36,21 +35,22 @@ function generate() {
       nameRaw.includes("sentient beings") ||
       nameRaw.includes("all sentient beings");
 
-    const name = smartCapitalize(nameRaw);
+const name = smartCapitalize(originalNameRaw);
+
 
     if (isDeceasedEntry) {
-      if (!deceasedPage || deceasedCount % 65 === 0) {
-        deceasedPage = createPage(deceasedBackground, "deceased");
-      }
-      createEntry(deceasedPage, number, name);
-      deceasedCount++;
-    } else {
-      if (!page || regularCount % 65 === 0) {
-        page = createPage(lampBackground, "regular");
-      }
-      createEntry(page, number, name);
-      regularCount++;
-    }
+  if (!deceasedPage || deceasedCount % 65 === 0) {
+    deceasedPage = createPage(deceasedBackground, "deceased");
+  }
+  createEntry(deceasedPage, number, name, true);
+  deceasedCount++;
+} else {
+  if (!page || regularCount % 65 === 0) {
+    page = createPage(lampBackground, "regular");
+  }
+  createEntry(page, number, name);
+  regularCount++;
+}
   });
 
   scalePages();
@@ -71,7 +71,7 @@ function createPage(background, type) {
   return page;
 }
 
-function createEntry(page, number, name) {
+function createEntry(page, number, name, isDeceasedOverride = false) {
   const entry = document.createElement("div");
   entry.className = "entry";
 
@@ -79,19 +79,19 @@ function createEntry(page, number, name) {
   nameWrapper.className = "name-wrapper";
 
   let displayName = name;
-  let isDeceased = false;
+  let isDeceased = isDeceasedOverride;
   let isSpecialDeceased = false;
 
-  if (name.startsWith("故")) {
+  if (!isDeceased && name.startsWith("故")) {
     isDeceased = true;
     displayName = name.replace(/^故\s*/, "");
   } else if (
-      name.includes("众生") ||
-      name.includes("歷代") ||
-      name.includes("历代") ||
-      name.includes("祖宗") ||
-      name.includes("祖先") ||
-      name.includes("冤亲债主")
+    name.includes("众生") ||
+    name.includes("歷代") ||
+    name.includes("历代") ||
+    name.includes("祖宗") ||
+    name.includes("祖先") ||
+    name.includes("冤亲债主")
   ) {
     isSpecialDeceased = true;
   }
@@ -105,10 +105,7 @@ function createEntry(page, number, name) {
 
   const nameDiv = document.createElement("div");
   nameDiv.className = "name";
-  nameDiv.innerHTML = formatName(displayName, isSpecialDeceased).replace(
-    /\n/g,
-    "<br>"
-  );
+  nameDiv.innerHTML = formatName(displayName, isSpecialDeceased).replace(/\n/g, "<br>");
 
   adjustFontSize(nameDiv, displayName);
 
@@ -122,6 +119,7 @@ function createEntry(page, number, name) {
   entry.appendChild(numberDiv);
   page.appendChild(entry);
 }
+
 
 function formatName(name, isSpecialDeceased) {
   if (isSpecialDeceased) {
