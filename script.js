@@ -87,10 +87,7 @@ function createEntry(page, number, name, isDeceasedOverride = false) {
   let isDeceased = isDeceasedOverride;
   let isSpecialDeceased = false;
 
-  if (!isDeceased && name.startsWith("故")) {
-    isDeceased = true;
-    displayName = name.replace(/^故\s*/, "");
-  } else if (
+  if (
     name.includes("众生") ||
     name.includes("歷代") ||
     name.includes("历代") ||
@@ -124,7 +121,6 @@ function createEntry(page, number, name, isDeceasedOverride = false) {
   entry.appendChild(numberDiv);
   page.appendChild(entry);
 }
-
 
 function formatName(name, isSpecialDeceased) {
   if (isSpecialDeceased) {
