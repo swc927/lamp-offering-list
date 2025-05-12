@@ -1,6 +1,14 @@
   let lampBackground = "Lamp.jpg";
 let deceasedBackground = "Deceased.jpg";
 
+function cleanDeceasedName(name) {
+  return name
+    .replace(/^(故|已故|仙逝|往生)\s*/g, "")
+    .replace(/[\[\(（【{]{1}.*?(祖先|冤亲债主|众生|歷代|历代).*?[\]\)）】}]{1}/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function generate() {
   const input = document.getElementById("input").value.trim();
   const lines = input
@@ -36,10 +44,10 @@ function generate() {
       nameRaw.includes("all sentient beings");
 
 let cleanedName = originalNameRaw;
-if (isDeceasedEntry && cleanedName.startsWith("故")) {
-  cleanedName = cleanedName.replace(/^故\s*/, ""); // remove leading '故' with or without space
+if (isDeceasedEntry) {
+  cleanedName = cleanDeceasedName(cleanedName);
 }
-const name = smartCapitalize(cleanedName); // Use the cleaned version
+const name = smartCapitalize(cleanedName);
 
 
 
@@ -60,7 +68,6 @@ const name = smartCapitalize(cleanedName); // Use the cleaned version
 
   scalePages();
 }
-
 
 function createPage(background, type) {
   const container = document.createElement("div");
