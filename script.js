@@ -35,7 +35,12 @@ function generate() {
       nameRaw.includes("sentient beings") ||
       nameRaw.includes("all sentient beings");
 
-const name = smartCapitalize(originalNameRaw);
+let cleanedName = originalNameRaw;
+if (isDeceasedEntry && cleanedName.startsWith("故")) {
+  cleanedName = cleanedName.replace(/^故\s*/, ""); // remove leading '故' with or without space
+}
+const name = smartCapitalize(cleanedName); // Use the cleaned version
+
 
 
     if (isDeceasedEntry) {
