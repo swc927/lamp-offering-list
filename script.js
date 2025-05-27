@@ -130,6 +130,12 @@ function createEntry(page, number, name, isDeceasedOverride = false) {
 }
 
 function formatName(name, isSpecialDeceased) {
+  if (!isSpecialDeceased && name.includes("@")) {
+    const [main, ...atParts] = name.split("@");
+    const atName = atParts.join("@").trim();
+    return main.trim() + "\n@" + atName;
+  }
+  
   if (isSpecialDeceased) {
     return splitNameToTwoLines(name);
   }
