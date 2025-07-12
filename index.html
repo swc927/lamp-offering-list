@@ -15,13 +15,17 @@
 </head>
 
 <body>
-  <h1>Lamp Offering List Generator</h1>
+  <header>
+    <h1>Lamp Offering List Generator</h1>
+  </header>
 
   <input type="file" id="csvInput" accept=".csv"><br>
   <textarea id="input" placeholder="Paste your names and numbers here..."></textarea><br>
 
   <button onclick="generate()">Generate</button>
   <button onclick="downloadPDF()">Download PDF</button><br>
+
+  <div id="pageCount" class="page-count-display"></div>
 
   <div id="output"></div>
 </body>
