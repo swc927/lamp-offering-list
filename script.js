@@ -65,8 +65,11 @@ const name = smartCapitalize(cleanedName);
   regularCount++;
 }
   });
-
-  scalePages();
+  
+    scalePages();
+  
+const totalPages = document.querySelectorAll(".container").length;
+document.getElementById("pageCount").textContent = `Total Pages: ${totalPages}`;
 }
 
 function createPage(background, type) {
