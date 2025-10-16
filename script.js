@@ -1,4 +1,4 @@
-  let lampBackground = "Lamp.jpg";
+let lampBackground = "Lamp.jpg";
 let deceasedBackground = "Deceased.jpg";
 
 function cleanDeceasedName(name) {
@@ -47,8 +47,8 @@ let cleanedName = originalNameRaw;
 if (isDeceasedEntry) {
   cleanedName = cleanDeceasedName(cleanedName);
 }
-const name = smartCapitalize(cleanedName);
-
+let name = smartCapitalize(cleanedName);
+name = keepCompanyUppercase(name);
 
 
     if (isDeceasedEntry) {
@@ -246,6 +246,15 @@ function smartCapitalize(name) {
   }
   return result;
 }
+
+function keepCompanyUppercase(name) {
+  const companyMarkers = /(Pte\s*Ltd|Pte\.?\s*Ltd|Ltd|Limited|有限公司|有限责任公司|私人有限公司)/i;
+  if (companyMarkers.test(name)) {
+    return name.toUpperCase();
+  }
+  return name;
+}
+
 
 function splitChineseName(name) {
   if (name.length <= 5) return name;
