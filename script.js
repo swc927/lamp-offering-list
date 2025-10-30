@@ -207,7 +207,7 @@ function adjustFontSize(nameDiv, name) {
   if (isChinese(name)) {
     if (name.length > 20) nameDiv.style.fontSize = "24px";
     else if (name.length > 16) nameDiv.style.fontSize = "28px";
-    else if (name.length > 7) nameDiv.style.fontSize = "40px";
+    else if (name.length > 7) nameDiv.style.fontSize = "35px";
     else if (name.length > 4) nameDiv.style.fontSize = "60px";
   } else {
     if (name.length > 45) nameDiv.style.fontSize = "30px";
