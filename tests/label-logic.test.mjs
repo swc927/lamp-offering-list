@@ -13,8 +13,15 @@ test("pasted rows require number and name", () => {
   const result = validateRows(parsePastedText("M0001\tSMJ\nM0002\nwrong Name"));
   assert.deepEqual(result.valid.map(row => [row.number, row.name]), [["M0001", "SMJ"]]); assert.equal(result.issues.length, 2);
 });
-test("duplicate lamp numbers are blocked", () => {
-  const result = validateRows(parsePastedText("M0001 Name One\nM0001 Name Two")); assert.equal(result.valid.length, 1); assert.match(result.issues[0].message, /duplicated/);
+test("repeated physical labels are allowed but conflicting names are blocked", () => {
+  const repeated = validateRows(parsePastedText("M0001 Name One\nM0001 Name One"));
+  assert.equal(repeated.valid.length, 2); assert.equal(repeated.issues.length, 0);
+  const conflict = validateRows(parsePastedText("M0001 Name One\nM0001 Name Two"));
+  assert.equal(conflict.valid.length, 1); assert.match(conflict.issues[0].message, /conflicts/);
+});
+test("suffixed lamp numbers are accepted", () => {
+  const result = validateRows(parsePastedText("M0683A Name A\nM0683B Name B"));
+  assert.deepEqual(result.valid.map(row => row.number), ["M0683A", "M0683B"]); assert.equal(result.issues.length, 0);
 });
 test("CSV parser preserves commas and escaped quotes", () => {
   const rows = parseCsv('M0001,"Quek Hui Ping, Sherlynn"\nM0002,"A ""Quoted"" Name"');
