@@ -1,411 +1,116 @@
-let lampBackground = "Lamp.jpg";
-let deceasedBackground = "Deceased.jpg";
+import { parseCsv, parsePastedText, splitDisplayName, validateRows } from "./lib/label-logic.mjs";
 
-function cleanDeceasedName(name) {
-  return name
-    .replace(/^(故|已故|仙逝|往生)\s*/g, "")
-    .replace(/[\[\(（【{]{1}.*?(祖先|冤亲债主|众生|歷代|历代).*?[\]\)）】}]{1}/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
+const PAGE_SIZE = 65;
+const MIN_NAME_SIZE = 22;
+const elements = {
+  input: document.getElementById("input"), csv: document.getElementById("csvInput"), output: document.getElementById("output"),
+  status: document.getElementById("status"), counts: document.getElementById("counts"), issues: document.getElementById("issues"),
+  pageCount: document.getElementById("pageCount"), generate: document.getElementById("generate"), download: document.getElementById("downloadPDF"),
+};
+let generated = null;
+
+function setStatus(message, type = "") { elements.status.textContent = message; elements.status.className = type; }
+function appendTextLines(target, lines) { lines.forEach((line, index) => { if (index) target.appendChild(document.createElement("br")); target.appendChild(document.createTextNode(line)); }); }
+
+function initialFontSize(name) {
+  const length = name.length;
+  if (/[^\u0000-\u00ff]/u.test(name)) {
+    if (length > 20) return 24; if (length > 16) return 28; if (length >= 7) return 40; if (length > 4) return 60; return 70;
+  }
+  if (length > 45) return 30; if (length > 30) return 35; if (length > 20) return 36; if (length > 18) return 38;
+  if (length > 14) return 45; if (length > 12) return 50; if (length > 10) return 58; return 70;
+}
+
+function createPage(type) {
+  const container = document.createElement("div"); container.className = "container";
+  const page = document.createElement("section"); page.className = `page ${type}`;
+  page.setAttribute("aria-label", `${type === "deceased" ? "Deceased" : "Living"} lamp labels`);
+  container.appendChild(page); elements.output.appendChild(container); return page;
+}
+
+function createEntry(page, row) {
+  const entry = document.createElement("article"); entry.className = "entry"; entry.dataset.number = row.number;
+  const wrapper = document.createElement("div"); wrapper.className = "name-wrapper";
+  if (row.deceased) { const label = document.createElement("div"); label.className = "deceased-label"; label.textContent = "(已故)"; wrapper.appendChild(label); }
+  const name = document.createElement("div"); name.className = "name"; name.style.fontSize = `${initialFontSize(row.name)}px`;
+  appendTextLines(name, splitDisplayName(row.name, row.deceased)); wrapper.appendChild(name);
+  const number = document.createElement("div"); number.className = "number"; number.textContent = row.number;
+  entry.append(wrapper, number); page.appendChild(entry); return entry;
+}
+
+function fitEntry(entry) {
+  const name = entry.querySelector(".name"), wrapper = entry.querySelector(".name-wrapper"), number = entry.querySelector(".number");
+  const fits = () => wrapper.scrollWidth <= entry.clientWidth - 16 && wrapper.scrollHeight + number.offsetHeight + 10 <= entry.clientHeight - 16;
+  let size = Number.parseFloat(name.style.fontSize);
+  while (!fits() && size > MIN_NAME_SIZE) { size -= 2; name.style.fontSize = `${size}px`; }
+  const okay = fits(); entry.classList.toggle("overflow-error", !okay); return okay;
+}
+
+function renderPages(rows) {
+  elements.output.replaceChildren(); const entries = [];
+  for (const [type, group] of [["regular", rows.filter(row => !row.deceased)], ["deceased", rows.filter(row => row.deceased)]]) {
+    let page;
+    group.forEach((row, index) => { if (index % PAGE_SIZE === 0) page = createPage(type); entries.push({ row, entry: createEntry(page, row) }); });
+  }
+  const overflow = entries.filter(({ entry }) => !fitEntry(entry)).map(({ row }) => row.number); scalePages(); return overflow;
+}
+
+function renderReport({ valid, issues, overflow }) {
+  const living = valid.filter(row => !row.deceased).length, deceased = valid.length - living, pages = elements.output.querySelectorAll(".page").length;
+  elements.counts.replaceChildren();
+  [[valid.length, "valid labels"], [living, "living"], [deceased, "deceased"], [pages, "pages"]].forEach(([count, label]) => {
+    const item = document.createElement("span"), strong = document.createElement("strong"); strong.textContent = count; item.append(strong, ` ${label}`); elements.counts.appendChild(item);
+  });
+  const messages = [...issues.map(issue => `Line ${issue.line}: ${issue.message}`), ...overflow.map(number => `${number}: name cannot fit safely inside its label box.`)];
+  elements.issues.replaceChildren(...messages.map(message => { const item = document.createElement("li"); item.textContent = message; return item; }));
+  elements.pageCount.textContent = pages ? `Total pages: ${pages}` : ""; return messages;
 }
 
 function generate() {
-  const input = document.getElementById("input").value.trim();
-  const lines = input
-    .split("\n")
-    .map((line) => line.replace(/\t+/g, " ").trim())
-    .filter((line) => line);
-
-  const output = document.getElementById("output");
-  output.innerHTML = "";
-
-  let page, deceasedPage;
-  let regularCount = 0,
-      deceasedCount = 0;
-
-  lines.forEach((line) => {
-    const parts = line.trim().split(/\s+/);
-    if (parts.length < 2) return;
-
-    const number = parts[0];
-    
-    const originalNameRaw = parts.slice(1).join(" ");
-    let nameRaw = originalNameRaw.replace(/\s+/g, " ").trim().toLowerCase();
-
-    const isDeceasedEntry =
-      nameRaw.startsWith("故") ||
-      nameRaw.includes("众生") ||
-      nameRaw.includes("歷代") ||
-      nameRaw.includes("历代") ||
-      nameRaw.includes("祖宗") ||
-      nameRaw.includes("祖先") ||
-      nameRaw.includes("冤亲债主") ||
-      nameRaw.includes("sentient beings") ||
-      nameRaw.includes("all sentient beings");
-
-let cleanedName = originalNameRaw;
-if (isDeceasedEntry) {
-  cleanedName = cleanDeceasedName(cleanedName);
-}
-let name = smartCapitalize(cleanedName);
-name = keepCompanyUppercase(name);
-
-
-    if (isDeceasedEntry) {
-  if (!deceasedPage || deceasedCount % 65 === 0) {
-    deceasedPage = createPage(deceasedBackground, "deceased");
-  }
-  createEntry(deceasedPage, number, name, true);
-  deceasedCount++;
-} else {
-  if (!page || regularCount % 65 === 0) {
-    page = createPage(lampBackground, "regular");
-  }
-  createEntry(page, number, name);
-  regularCount++;
-}
-  });
-  
-    scalePages();
-  
-const totalPages = document.querySelectorAll(".container").length;
-document.getElementById("pageCount").textContent = `Total Pages: ${totalPages}`;
-}
-
-function createPage(background, type) {
-  const container = document.createElement("div");
-  container.className = "container";
-
-  const page = document.createElement("div");
-  page.className = `page ${type}`;
-  page.style.backgroundImage = `url('${background}')`;
-
-  container.appendChild(page);
-  document.getElementById("output").appendChild(container);
-
-  return page;
-}
-
-function createEntry(page, number, name, isDeceasedOverride = false) {
-  const entry = document.createElement("div");
-  entry.className = "entry";
-
-  const nameWrapper = document.createElement("div");
-  nameWrapper.className = "name-wrapper";
-
-  let displayName = name;
-  let isDeceased = isDeceasedOverride;
-  let isSpecialDeceased = false;
-
-  if (
-    name.includes("众生") ||
-    name.includes("歷代") ||
-    name.includes("历代") ||
-    name.includes("祖宗") ||
-    name.includes("祖先") ||
-    name.includes("冤亲债主")
-  ) {
-    isSpecialDeceased = true;
-  }
-
-  if (isDeceased) {
-    const deceasedLabel = document.createElement("div");
-    deceasedLabel.className = "deceased-label";
-    deceasedLabel.innerText = "(已故)";
-    nameWrapper.appendChild(deceasedLabel);
-  }
-
-  const nameDiv = document.createElement("div");
-  nameDiv.className = "name";
-  nameDiv.innerHTML = formatName(displayName, isSpecialDeceased).replace(/\n/g, "<br>");
-
-  adjustFontSize(nameDiv, displayName);
-
-  nameWrapper.appendChild(nameDiv);
-
-  const numberDiv = document.createElement("div");
-  numberDiv.className = "number";
-  numberDiv.textContent = number;
-
-  entry.appendChild(nameWrapper);
-  entry.appendChild(numberDiv);
-  page.appendChild(entry);
-}
-
-function formatName(name, isSpecialDeceased) {
-  if (!isSpecialDeceased && name.includes("@")) {
-    const [main, ...atParts] = name.split("@");
-    const atName = atParts.join("@").trim();
-    return main.trim() + "\n@" + atName;
-  }
-  
-  if (isSpecialDeceased) {
-    return splitNameToTwoLines(name);
-  }
-
-  if (isChinese(name)) {
-    if (name.includes("[") || name.includes("（") || name.includes("(")) {
-      const bracketIndex = name.indexOf("[");
-      const roundBracketIndex = name.indexOf("（");
-      const smallBracketIndex = name.indexOf("(");
-
-      const validIndexes = [
-        bracketIndex,
-        roundBracketIndex,
-        smallBracketIndex,
-      ].filter((i) => i !== -1);
-
-      const earliestIndex = Math.min(...validIndexes);
-
-      const mainName = name.substring(0, earliestIndex).trim();
-      const bracketPart = name.substring(earliestIndex).trim();
-      return mainName + "\n" + bracketPart;
-    }
-
-    return splitChineseName(name);
-  }
-
-  if (name.includes("\n")) {
-    name = name
-      .split("\n")
-      .map((p) => p.trim())
-      .join(" ");
-  }
-
-  const words = name.split(" ").filter(Boolean);
-  const allEnglish = words.every((word) => /^[a-zA-Z]+$/.test(word));
-  const totalChars = name.replace(/\s+/g, "").length;
-
-  if (words.length === 4 && allEnglish) {
-    if (words[0].length > 4) {
-      const firstLine = words[0];
-      const secondLine = words.slice(1).join(" ");
-      return firstLine + "\n" + secondLine;
-    } else if (totalChars <= 16) {
-      return name;
-    } else {
-      const firstLine = words.slice(0, 3).join(" ");
-      const secondLine = words[3];
-      return firstLine + "\n" + secondLine;
-    }
-  }
-
-  if (words.length === 3 && allEnglish && totalChars <= 14) {
-    return name;
-  }
-
-  if (words.length >= 3 && allEnglish && totalChars >= 17) {
-    const firstHalf = words.slice(0, Math.ceil(words.length / 2)).join(" ");
-    const secondHalf = words.slice(Math.ceil(words.length / 2)).join(" ");
-    return firstHalf + "\n" + secondHalf;
-  }
-
-  return name;
-}
-
-function adjustFontSize(nameDiv, name) {
-  if (isChinese(name)) {
-    if (name.length > 20) nameDiv.style.fontSize = "24px";
-    else if (name.length > 16) nameDiv.style.fontSize = "28px";
-    else if (name.length >= 7) nameDiv.style.fontSize = "40px";
-    else if (name.length > 4) nameDiv.style.fontSize = "60px";
-  } else {
-    if (name.length > 45) nameDiv.style.fontSize = "30px";
-    else if (name.length > 30) nameDiv.style.fontSize = "35px";
-    else if (name.length > 20) nameDiv.style.fontSize = "36px";
-    else if (name.length > 18) nameDiv.style.fontSize = "38px";
-    else if (name.length > 14) nameDiv.style.fontSize = "45px";
-    else if (name.length > 12) nameDiv.style.fontSize = "50px";
-    else if (name.length > 10) nameDiv.style.fontSize = "58px";
-  }
-}
-
-function smartCapitalize(name) {
-  name = name.replace(/&amp;/g, " & ");
-
-  let result = "";
-  let currentWord = "";
-
-  for (let i = 0; i < name.length; i++) {
-    const char = name[i];
-    if (char.match(/[a-zA-Z]/)) {
-      currentWord += char;
-    } else {
-      if (currentWord) {
-        result +=
-          currentWord.charAt(0).toUpperCase() +
-          currentWord.slice(1).toLowerCase();
-        currentWord = "";
-      }
-      result += char;
-    }
-  }
-  if (currentWord) {
-    result +=
-      currentWord.charAt(0).toUpperCase() + currentWord.slice(1).toLowerCase();
-  }
-  return result;
-}
-
-function keepCompanyUppercase(name) {
-  const companyMarkers = /(Pte\s*Ltd|Pte\.?\s*Ltd|Ltd|Limited|有限公司|有限责任公司|私人有限公司)/i;
-  if (companyMarkers.test(name)) {
-    return name.toUpperCase();
-  }
-  return name;
-}
-
-
-function splitChineseName(name) {
-  if (name.length <= 5) return name;
-
-  const endings = ["有限责任公司", "私人有限公司", "有限公司"];
-
-  let matchedEnding = null;
-
-  for (const ending of endings) {
-    if (name.endsWith(ending)) {
-      matchedEnding = ending;
-      break;
-    }
-  }
-
-  if (matchedEnding) {
-    const mainPart = name.slice(0, name.length - matchedEnding.length);
-    const firstLine = mainPart.trim();
-    const secondLine = matchedEnding.trim();
-    return firstLine + "\n" + secondLine;
-  }
-
-  const mid = Math.ceil(name.length / 2);
-  const firstLine = name.slice(0, mid).trim();
-  const secondLine = name.slice(mid).trim();
-  return firstLine + "\n" + secondLine;
-}
-
-function splitNameToTwoLines(name) {
-  if (name.length <= 16) return name;
-  const half = Math.floor(name.length / 2);
-  return name.slice(0, half) + "\n" + name.slice(half);
-}
-
-function isChinese(text) {
-  return /[\u4e00-\u9fff]/.test(text);
+  const { valid, issues } = validateRows(parsePastedText(elements.input.value));
+  const overflow = valid.length ? renderPages(valid) : [];
+  const messages = renderReport({ valid, issues, overflow });
+  generated = messages.length || !valid.length ? null : { rows: valid, pages: elements.output.querySelectorAll(".page").length };
+  elements.download.disabled = !generated;
+  setStatus(generated ? `Verified ${valid.length} labels. Review the preview before downloading.` : messages.length ? "Resolve every issue before downloading the PDF." : "Enter at least one valid lamp label.", generated ? "success" : "error");
 }
 
 function scalePages() {
-  const containers = document.querySelectorAll(".container");
-  containers.forEach((container) => {
-    const page = container.querySelector(".page");
-    const scaleX = (window.innerWidth * 0.95) / 2480;
-    const scaleY = (window.innerHeight * 0.9) / 3508;
-    const scale = Math.min(scaleX, scaleY);
-    page.style.transform = `scale(${scale})`;
-    page.style.transformOrigin = "top center";
+  elements.output.querySelectorAll(".container").forEach(container => {
+    const page = container.querySelector(".page"); const scale = Math.min((window.innerWidth * .94) / 2480, (window.innerHeight * .86) / 3508);
+    page.style.transform = `scale(${scale})`; container.style.height = `${3508 * scale}px`;
   });
 }
 
-window.addEventListener("resize", scalePages);
-
-document.getElementById("csvInput").addEventListener("change", function (e) {
-  const file = e.target.files[0];
-  if (!file) return;
-
-  const reader = new FileReader();
-  reader.onload = function (event) {
-    const text = event.target.result;
-    const lines = text
-      .split("\n")
-      .map((line) => line.trim())
-      .filter((line) => line);
-    const formatted = lines
-      .map((line) => {
-        const [number, name] = line.split(",");
-        return `${number} ${name}`;
-      })
-      .join("\n");
-    document.getElementById("input").value = formatted;
-  };
-  reader.readAsText(file);
-});
-
-const { jsPDF } = window.jspdf;
-
-function downloadPDF() {
-  const output = document.getElementById("output");
-
-  if (!output || output.innerHTML.trim() === "") {
-    console.error("No content to generate PDF.");
-    alert("No content to generate! Please click 'Generate' first.");
-    return;
-  }
-
-  const containers = document.querySelectorAll(".container");
-  if (containers.length === 0) {
-    console.error("No pages to capture.");
-    alert("No pages to capture! Please generate first.");
-    return;
-  }
-
-  const originalTransforms = [];
-  containers.forEach((container) => {
-    const page = container.querySelector(".page");
-    originalTransforms.push(page.style.transform);
-    page.style.transform = "none";
-  });
-
-  const pdf = new jsPDF({
-    orientation: "portrait",
-    unit: "px",
-    format: [3508, 4961],
-  });
-
-  let currentPage = 0;
-
-  function capturePage(index) {
-    if (index >= containers.length) {
-      containers.forEach((container, idx) => {
-        const page = container.querySelector(".page");
-        page.style.transform = originalTransforms[idx];
-      });
-      pdf.save("Lamp_Offering_List_A3.pdf");
-      return;
+async function downloadPDF() {
+  if (!generated) { setStatus("Validate the current list before downloading.", "error"); return; }
+  if (!window.html2canvas || !window.jspdf?.jsPDF) { setStatus("The PDF libraries did not load. Check the connection and reload the page.", "error"); return; }
+  elements.download.disabled = true; elements.generate.disabled = true;
+  const pages = [...elements.output.querySelectorAll(".page")], transforms = pages.map(page => page.style.transform);
+  const pdf = new window.jspdf.jsPDF({ orientation: "portrait", unit: "mm", format: "a3" });
+  try {
+    pages.forEach(page => { page.style.transform = "none"; });
+    for (let index = 0; index < pages.length; index += 1) {
+      setStatus(`Creating PDF page ${index + 1} of ${pages.length}…`);
+      const canvas = await window.html2canvas(pages[index], { scale: 1, useCORS: true, backgroundColor: "#ffffff" });
+      const image = canvas.toDataURL("image/jpeg", .88); if (index) pdf.addPage();
+      pdf.addImage(image, "JPEG", 0, 0, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight()); canvas.width = 1; canvas.height = 1;
     }
-
-    const container = containers[index];
-
-    html2canvas(container, {
-      scale: 2,
-      useCORS: true,
-    })
-      .then((canvas) => {
-        const imgData = canvas.toDataURL("image/jpeg", 0.6);
-
-        const imgProps = pdf.getImageProperties(imgData);
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = pdf.internal.pageSize.getHeight();
-
-        const ratio = Math.min(
-          pdfWidth / imgProps.width,
-          pdfHeight / imgProps.height
-        );
-        const imgWidth = imgProps.width * ratio;
-        const imgHeight = imgProps.height * ratio;
-
-        const x = (pdfWidth - imgWidth) / 2;
-        const y = (pdfHeight - imgHeight) / 2;
-
-        if (index > 0) {
-          pdf.addPage();
-        }
-        pdf.addImage(imgData, "JPEG", x, y, imgWidth, imgHeight);
-
-        capturePage(index + 1);
-      })
-      .catch((error) => {
-        console.error("Error capturing page:", error);
-      });
+    const first = generated.rows[0].number, last = generated.rows.at(-1).number;
+    pdf.save(`Lamp_Offering_Labels_${first}-${last}.pdf`); setStatus(`PDF created for ${generated.rows.length} verified labels (${first}–${last}).`, "success");
+  } catch (error) {
+    console.error("PDF generation failed", error); setStatus("PDF generation failed. Nothing was marked printed; reload and try again.", "error");
+  } finally {
+    pages.forEach((page, index) => { page.style.transform = transforms[index]; }); elements.download.disabled = false; elements.generate.disabled = false; scalePages();
   }
-
-  capturePage(currentPage);
 }
+
+elements.csv.addEventListener("change", async event => {
+  const file = event.target.files[0]; if (!file) return;
+  const rows = parseCsv(await file.text()); elements.input.value = rows.map(row => `${row.number}\t${row.name}`).join("\n");
+  setStatus(`Imported ${rows.length} CSV rows. Validate them before downloading.`); elements.download.disabled = true; generated = null;
+});
+elements.generate.addEventListener("click", generate);
+elements.download.addEventListener("click", downloadPDF);
+elements.input.addEventListener("input", () => { generated = null; elements.download.disabled = true; });
+window.addEventListener("resize", scalePages);
