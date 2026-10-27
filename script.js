@@ -1,7 +1,7 @@
 import { parseCsv, parsePastedText, splitDisplayName, validateRows } from "./lib/label-logic.mjs";
 
 const PAGE_SIZE = 65;
-const MIN_NAME_SIZE = 22;
+const MIN_NAME_SIZE = 38;
 const elements = {
   input: document.getElementById("input"), csv: document.getElementById("csvInput"), output: document.getElementById("output"),
   status: document.getElementById("status"), counts: document.getElementById("counts"), issues: document.getElementById("issues"),
@@ -32,8 +32,8 @@ function createEntry(page, row) {
   const entry = document.createElement("article"); entry.className = "entry"; entry.dataset.number = row.number;
   const wrapper = document.createElement("div"); wrapper.className = "name-wrapper";
   if (row.deceased) { const label = document.createElement("div"); label.className = "deceased-label"; label.textContent = "(已故)"; wrapper.appendChild(label); }
-  const name = document.createElement("div"); name.className = "name"; name.style.fontSize = `${initialFontSize(row.name)}px`;
-  appendTextLines(name, splitDisplayName(row.name, row.deceased)); wrapper.appendChild(name);
+  const name = document.createElement("div"); name.className = "name"; name.style.fontSize = `${Math.max(initialFontSize(row.name), MIN_NAME_SIZE)}px`;
+  name.textContent = row.name; wrapper.appendChild(name);
   const number = document.createElement("div"); number.className = "number"; number.textContent = row.number;
   entry.append(wrapper, number); page.appendChild(entry); return entry;
 }
@@ -41,8 +41,17 @@ function createEntry(page, row) {
 function fitEntry(entry) {
   const name = entry.querySelector(".name"), wrapper = entry.querySelector(".name-wrapper"), number = entry.querySelector(".number");
   const fits = () => wrapper.scrollWidth <= entry.clientWidth - 16 && wrapper.scrollHeight + number.offsetHeight + 10 <= entry.clientHeight - 16;
-  let size = Number.parseFloat(name.style.fontSize);
+  const startingSize = Number.parseFloat(name.style.fontSize);
+  let size = startingSize;
   while (!fits() && size > MIN_NAME_SIZE) { size -= 2; name.style.fontSize = `${size}px`; }
+  if (!fits()) {
+    const row = { name: name.textContent, deceased: Boolean(entry.querySelector(".deceased-label")) };
+    const lines = splitDisplayName(row.name, row.deceased);
+    if (lines.length > 1) {
+      name.replaceChildren(); appendTextLines(name, lines); size = startingSize; name.style.fontSize = `${size}px`;
+      while (!fits() && size > MIN_NAME_SIZE) { size -= 2; name.style.fontSize = `${size}px`; }
+    }
+  }
   const okay = fits(); entry.classList.toggle("overflow-error", !okay); return okay;
 }
 
