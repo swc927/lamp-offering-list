@@ -2,6 +2,8 @@ import { parseCsv, parsePastedText, splitDisplayName, validateRows } from "./lib
 
 const PAGE_SIZE = 65;
 const MIN_NAME_SIZE = 38;
+const ENTRY_HORIZONTAL_INSET = 20;
+const ENTRY_VERTICAL_INSET = 12;
 const elements = {
   input: document.getElementById("input"), csv: document.getElementById("csvInput"), output: document.getElementById("output"),
   status: document.getElementById("status"), counts: document.getElementById("counts"), issues: document.getElementById("issues"),
@@ -40,7 +42,8 @@ function createEntry(page, row) {
 
 function fitEntry(entry) {
   const name = entry.querySelector(".name"), wrapper = entry.querySelector(".name-wrapper"), number = entry.querySelector(".number");
-  const fits = () => wrapper.scrollWidth <= entry.clientWidth - 16 && wrapper.scrollHeight + number.offsetHeight + 10 <= entry.clientHeight - 16;
+  const fits = () => wrapper.scrollWidth <= entry.clientWidth - (ENTRY_HORIZONTAL_INSET * 2)
+    && wrapper.scrollHeight + number.offsetHeight + 10 <= entry.clientHeight - (ENTRY_VERTICAL_INSET * 2);
   const startingSize = Number.parseFloat(name.style.fontSize);
   let size = startingSize;
   while (!fits() && size > MIN_NAME_SIZE) { size -= 2; name.style.fontSize = `${size}px`; }
