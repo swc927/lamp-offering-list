@@ -14,8 +14,8 @@ Generate print-ready lamp-offering labels from exact lamp numbers and display na
 
 ## Operational rules
 
-- Preserve the exact display-name capitalization supplied by the verified source. Do not recase companies or acronyms.
-- Prefer one readable line. Never shrink below the verified M0797 reference size (38 px); only then use a semantic fallback line break at a comma, before a parenthetical name, or at a balanced name boundary while preserving source order.
+- Preserve source spelling while normalizing only established company suffixes (`Pte Ltd`, `Sdn Bhd`) and parenthetical abbreviations such as `(SM)`. Keep other company acronyms unchanged.
+- Apply semantic grouping before font reduction: leading English preferred names above the remaining full name, compound English given names together, long South Asian first names above the remainder, and separate lines for `& Family`, parenthetical names and comma-separated alternate names. Keep short names and readable company names on one line. Never shrink below the verified M0797 reference size (38 px).
 - Keep a 20 px horizontal and 12 px vertical safe inset inside every printed label, and use the same inset in overflow validation so names cannot pass validation while visually touching the box border.
 - `故`, `已故`, `仙逝`, `往生`, explicit deceased descriptions, ancestors and sentient-being descriptions use the deceased layout.
 - Duplicate or malformed lamp numbers block PDF download.

@@ -1,4 +1,4 @@
-import { parseCsv, parsePastedText, splitDisplayName, validateRows } from "./lib/label-logic.mjs";
+import { parseCsv, parsePastedText, splitDisplayName, validateRows } from "./lib/label-logic.mjs?v=20261028-semantic-lines";
 
 const PAGE_SIZE = 65;
 const MIN_NAME_SIZE = 38;
@@ -35,7 +35,8 @@ function createEntry(page, row) {
   const wrapper = document.createElement("div"); wrapper.className = "name-wrapper";
   if (row.deceased) { const label = document.createElement("div"); label.className = "deceased-label"; label.textContent = "(已故)"; wrapper.appendChild(label); }
   const name = document.createElement("div"); name.className = "name"; name.style.fontSize = `${Math.max(initialFontSize(row.name), MIN_NAME_SIZE)}px`;
-  name.textContent = row.name; wrapper.appendChild(name);
+  const preferredLines = splitDisplayName(row.name, row.deceased);
+  appendTextLines(name, preferredLines); wrapper.appendChild(name);
   const number = document.createElement("div"); number.className = "number"; number.textContent = row.number;
   entry.append(wrapper, number); page.appendChild(entry); return entry;
 }
@@ -47,7 +48,7 @@ function fitEntry(entry) {
   const startingSize = Number.parseFloat(name.style.fontSize);
   let size = startingSize;
   while (!fits() && size > MIN_NAME_SIZE) { size -= 2; name.style.fontSize = `${size}px`; }
-  if (!fits()) {
+  if (!fits() && !name.querySelector("br")) {
     const row = { name: name.textContent, deceased: Boolean(entry.querySelector(".deceased-label")) };
     const lines = splitDisplayName(row.name, row.deceased);
     if (lines.length > 1) {
@@ -98,13 +99,38 @@ async function downloadPDF() {
   if (!generated) { setStatus("Validate the current list before downloading.", "error"); return; }
   if (!window.html2canvas || !window.jspdf?.jsPDF) { setStatus("The PDF libraries did not load. Check the connection and reload the page.", "error"); return; }
   elements.download.disabled = true; elements.generate.disabled = true;
-  const pages = [...elements.output.querySelectorAll(".page")], transforms = pages.map(page => page.style.transform);
+  const pages = [...elements.output.querySelectorAll(".page")];
+  const captureState = pages.map(page => ({
+    page,
+    transform: page.style.transform,
+    container: page.parentElement,
+    containerWidth: page.parentElement.style.width,
+    containerHeight: page.parentElement.style.height,
+    containerOverflow: page.parentElement.style.overflow,
+    containerJustifyContent: page.parentElement.style.justifyContent,
+  }));
   const pdf = new window.jspdf.jsPDF({ orientation: "portrait", unit: "mm", format: "a3" });
   try {
-    pages.forEach(page => { page.style.transform = "none"; });
+    captureState.forEach(({ page, container }) => {
+      page.style.transform = "none";
+      container.style.width = "2480px";
+      container.style.height = "3508px";
+      container.style.overflow = "visible";
+      container.style.justifyContent = "flex-start";
+    });
     for (let index = 0; index < pages.length; index += 1) {
       setStatus(`Creating PDF page ${index + 1} of ${pages.length}…`);
-      const canvas = await window.html2canvas(pages[index], { scale: 1, useCORS: true, backgroundColor: "#ffffff" });
+      const canvas = await window.html2canvas(pages[index], {
+        scale: 1,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+        width: 2480,
+        height: 3508,
+        windowWidth: 2480,
+        windowHeight: 3508,
+        scrollX: 0,
+        scrollY: 0,
+      });
       const image = canvas.toDataURL("image/jpeg", .88); if (index) pdf.addPage();
       pdf.addImage(image, "JPEG", 0, 0, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight()); canvas.width = 1; canvas.height = 1;
     }
@@ -113,7 +139,14 @@ async function downloadPDF() {
   } catch (error) {
     console.error("PDF generation failed", error); setStatus("PDF generation failed. Nothing was marked printed; reload and try again.", "error");
   } finally {
-    pages.forEach((page, index) => { page.style.transform = transforms[index]; }); elements.download.disabled = false; elements.generate.disabled = false; scalePages();
+    captureState.forEach(({ page, transform, container, containerWidth, containerHeight, containerOverflow, containerJustifyContent }) => {
+      page.style.transform = transform;
+      container.style.width = containerWidth;
+      container.style.height = containerHeight;
+      container.style.overflow = containerOverflow;
+      container.style.justifyContent = containerJustifyContent;
+    });
+    elements.download.disabled = false; elements.generate.disabled = false; scalePages();
   }
 }
 
