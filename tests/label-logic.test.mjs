@@ -55,4 +55,7 @@ test("fallback line breaks preserve meaningful name groups", () => {
   assert.deepEqual(splitDisplayName("Express Label Pte Ltd"), ["Express Label Pte Ltd"]);
   assert.deepEqual(splitDisplayName("Wong Guan Xiong Augustine"), ["Wong Guan Xiong", "Augustine"]);
   assert.deepEqual(splitDisplayName("Michelle Eng Hwee Ee (Xing Weiyu)"), ["Michelle Eng Hwee Ee", "(Xing Weiyu)"]);
+  assert.deepEqual(splitDisplayName("歷代許氏祖先", true), ["歷代許氏祖先"]);
+  assert.deepEqual(splitDisplayName("吴门历代祖先", true), ["吴门历代祖先"]);
+  assert.deepEqual(splitDisplayName("Romeo G. Galera Sr.", true), ["Romeo", "G. Galera Sr."]);
 });
