@@ -1,4 +1,4 @@
-import { parseCsv, parsePastedText, splitDisplayName, validateRows } from "./lib/label-logic.mjs?v=20261103-ancestor-lines";
+import { parseCsv, parsePastedText, splitDisplayName, validateRows } from "./lib/label-logic.mjs?v=20261103-print-layouts";
 
 const PAGE_SIZE = 65;
 const MIN_NAME_SIZE = 38;

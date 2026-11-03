@@ -17,6 +17,7 @@ Generate print-ready lamp-offering labels from exact lamp numbers and display na
 - Preserve source spelling while normalizing only established company suffixes (`Pte Ltd`, `Sdn Bhd`) and parenthetical abbreviations such as `(SM)`. Keep other company acronyms unchanged.
 - Apply semantic grouping before font reduction: leading English preferred names above the remaining full name, compound English given names together, long South Asian first names above the remainder, and separate lines for `& Family`, parenthetical names and comma-separated alternate names. Keep short names and readable company names on one line. Never shrink below the verified M0797 reference size (38 px).
 - Keep short Chinese ancestor-group names (up to seven characters) on one line, and keep an English initial/surname/suffix group such as `G. Galera Sr.` together on the second line.
+- Split `私人有限公司`, mixed English-name `合家`/`阖家`, and square-bracket Dharma names into meaningful second lines. For four-word romanised names, allow a five-letter trailing English given name such as `Kayla` to remain together as the second line.
 - Keep a 20 px horizontal and 12 px vertical safe inset inside every printed label, and use the same inset in overflow validation so names cannot pass validation while visually touching the box border.
 - `故`, `已故`, `仙逝`, `往生`, explicit deceased descriptions, ancestors and sentient-being descriptions use the deceased layout.
 - Duplicate or malformed lamp numbers block PDF download.
