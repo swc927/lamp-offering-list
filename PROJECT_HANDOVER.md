@@ -33,3 +33,11 @@ On 27 October 2026, the full verified workbook list rendered 912 labels across 1
 ## Hosting
 
 The public GitHub Pages site is sourced from `swc927/lamp-offering-list`. Development changes belong on a feature branch. Do not advance `main` or publish without an explicitly authorized release after review.
+
+## 7 November 2026 bracket layout fix
+
+- Normalize complete ASCII/full-width/mixed round-bracket pairs before layout.
+- Split a trailing parenthetical alias before its opening bracket with or without preceding whitespace, keeping both brackets with the alias on line two.
+- Preserve missing-bracket input and square brackets; avoid changing name spelling.
+- The browser module import version is advanced so old cached layout logic is not reused.
+- Run the ten parsing/layout regression tests, then verify the rendered preview before release.

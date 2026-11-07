@@ -8,3 +8,5 @@ Every label also reserves a 20 px horizontal and 12 px vertical safe inset so lo
 The app does not upload the pasted list. It uses locally rendered HTML and client-side PDF generation. Serve the repository as static files; for local testing run `python3 -m http.server 4173` and open `http://127.0.0.1:4173/`.
 
 Run the logic tests with `npm test`.
+
+Round parentheses are normalized across ASCII, full-width and mixed pairs. A trailing bracketed alias stays complete on the second line, including when no space separates it from the main name. Missing brackets are never invented.

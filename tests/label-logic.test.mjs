@@ -39,6 +39,17 @@ test("company suffixes and parenthetical abbreviations use consistent display ca
   const result = validateRows(parsePastedText("M0652 Express Label PTE LTD\nM0653 Express Production (Sm) Label Sticker CO"));
   assert.deepEqual(result.valid.map(row => row.name), ["Express Label Pte Ltd", "Express Production (SM) Label Sticker CO"]);
 });
+
+test("round bracket variants keep the complete alias on the second line", () => {
+  for (const name of ["示例姓名（法名)", "示例姓名(法名）", "示例姓名（法名）", "示例姓名(法名)", "示例姓名 (法名)"]) {
+    const result = validateRows(parsePastedText(`M0001\t${name}`));
+    assert.equal(result.issues.length, 0);
+    assert.equal(result.valid[0].name.replace(/\s+/gu, ""), "示例姓名(法名)");
+    assert.deepEqual(splitDisplayName(result.valid[0].name), ["示例姓名", "(法名)"]);
+  }
+  assert.equal(normalizeDisplayName("Example (Alias"), "Example (Alias");
+  assert.equal(normalizeDisplayName("Example [Dharma]"), "Example [Dharma]");
+});
 test("fallback line breaks preserve meaningful name groups", () => {
   assert.deepEqual(splitDisplayName("Kum Yan Wai Shernine"), ["Kum Yan Wai", "Shernine"]);
   assert.deepEqual(splitDisplayName("Quek Hui Ping, Sherlynn"), ["Quek Hui Ping", "Sherlynn"]);
